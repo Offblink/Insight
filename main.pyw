@@ -1,6 +1,6 @@
 """洞见 v2 — 圆形鼠标放大镜(托盘常驻版)。
 
-启动即静默驻留托盘并发送系统通知;按住 Ctrl = 临时放大(peek),松开收回;
+启动即静默驻留托盘并发送系统通知;按住 Ctrl = 临时放大(peek)，松开收回;
 全局热键(默认 Ctrl+Alt+M)= 常驻跟随;托盘菜单含倍率预设与设置。
 重复启动:经 IPC 请求已运行实例弹系统通知后退出。
 """
@@ -30,12 +30,12 @@ def _ensure_deps() -> None:
     except Exception as exc:  # noqa: BLE001 - 安装失败仅提示
         print(f"自动安装失败: {exc}\n请手动运行: python -m pip install -r requirements.txt")
         sys.exit(1)
-    print("依赖安装完成,请重新启动洞见。")
+    print("依赖安装完成，请重新启动洞见。")
     sys.exit(0)
 
 
 def _run_selftest(app, magnifier) -> None:
-    """DONGJIAN_SELFTEST=1:程序化 pop→retract→quit,供自动化验证。"""
+    """DONGJIAN_SELFTEST=1:程序化 pop→retract→quit，供自动化验证。"""
     from PyQt6.QtCore import QTimer
 
     QTimer.singleShot(800, magnifier.pop)
@@ -44,7 +44,7 @@ def _run_selftest(app, magnifier) -> None:
 
 
 def _notify_already_running() -> None:
-    """第二实例:连接 IPC 请求已运行实例弹系统通知,然后退出。"""
+    """第二实例:连接 IPC 请求已运行实例弹系统通知，然后退出。"""
     from PyQt6.QtNetwork import QLocalSocket
 
     sock = QLocalSocket()
@@ -62,7 +62,7 @@ def main() -> None:
     from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
 
     class _Bridge(QObject):
-        """pynput 回调线程 → Qt 主线程的信号桥(queued 连接,线程安全)。"""
+        """pynput 回调线程 → Qt 主线程的信号桥(queued 连接，线程安全)。"""
 
         peek_started = pyqtSignal()
         peek_ended = pyqtSignal()
@@ -74,7 +74,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("洞见")
     app.setOrganizationName("洞见")
-    app.setQuitOnLastWindowClosed(False)  # 无主窗口,关窗不退出
+    app.setQuitOnLastWindowClosed(False)  # 无主窗口，关窗不退出
 
     # ── 单实例:重复启动通知用户后退出 ──
     shared = QSharedMemory("洞见V2Singleton")
@@ -95,7 +95,7 @@ def main() -> None:
 
     magnifier = MagnifierWindow(config)
 
-    # ── 设置窗口:懒创建单实例,关窗隐藏不退出 ──
+    # ── 设置窗口:懒创建单实例，关窗隐藏不退出 ──
     _settings_win = {"win": None}
 
     def _open_settings() -> None:
@@ -125,7 +125,7 @@ def main() -> None:
             conn.disconnectFromServer()
         tray.showMessage(
             "Insight 已在运行",
-            "已驻留系统托盘,无需重复启动",
+            "已驻留系统托盘，无需重复启动",
             QSystemTrayIcon.MessageIcon.Information,
             3000,
         )

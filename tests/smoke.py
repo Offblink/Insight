@@ -1,6 +1,6 @@
 """洞见 v2 冒烟测试:config 持久化、捕获、热键、托盘、设置窗口、动画生命周期。
 
-真机运行(短暂闪现窗口),无外部依赖。
+真机运行(短暂闪现窗口)，无外部依赖。
 """
 
 import os
@@ -27,7 +27,7 @@ def test_config() -> None:
     assert cfg.get(cfg.ctrl_peek) is False
     cfg.set(cfg.hotkey, "ctrl+shift+z")
     assert cfg.get(cfg.hotkey) == "ctrl+shift+z"
-    # 重新加载,验证 JSON 落盘
+    # 重新加载，验证 JSON 落盘
     cfg2 = load_config(file)
     assert cfg2.get(cfg2.zoom) == 3.0
     assert cfg2.get(cfg2.ctrl_peek) is False
@@ -71,7 +71,7 @@ def test_hotkey() -> None:
     assert events == ["peek_start"]
     ic._on_release(keyboard.Key.ctrl_l)
     assert events == ["peek_start", "peek_end"]
-    # 双 Ctrl 键:松开一个不收回,全部松开才收回
+    # 双 Ctrl 键:松开一个不收回，全部松开才收回
     ic._on_press(keyboard.Key.ctrl_l)
     ic._on_press(keyboard.Key.ctrl_r)
     assert events == ["peek_start", "peek_end", "peek_start"]
@@ -144,7 +144,7 @@ def test_settings() -> None:
 
     # FloatSliderCard:滑杆 → config 更新 → 卡片刷新
     card = FloatSliderCard(config.zoom, FluentIcon.ZOOM, "倍率", "1.0-8.0", 1.0, 8.0, 0.1)
-    # 范围:浮点除法的 round 修正,1.0→10、8.0→80(而非截断成 9/79)
+    # 范围:浮点除法的 round 修正，1.0→10、8.0→80(而非截断成 9/79)
     assert card._slider.minimum() == 10 and card._slider.maximum() == 80
     # 方向1:拖滑杆 → config 更新
     card._slider.setValue(int(2.0 / 0.1))

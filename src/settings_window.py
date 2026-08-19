@@ -1,6 +1,6 @@
-"""设置窗口:FluentWindow(隐藏导航) + SettingCardGroup,Windows 11 设置质感。
+"""设置窗口:FluentWindow(隐藏导航) + SettingCardGroup，Windows 11 设置质感。
 
-滑杆卡片直接绑定 ConfigItem;zoom 为浮点,QSlider 只有 int,
+滑杆卡片直接绑定 ConfigItem;zoom 为浮点，QSlider 只有 int，
 故 zoom 用自建 FloatSliderCard(内部按 0.1 步进缩放)。
 """
 
@@ -52,7 +52,7 @@ def _autostart_command() -> str:
 
 
 def set_autostart(enabled: bool) -> None:
-    """写/删 HKCU Run 键;幂等,可安全重复调用。"""
+    """写/删 HKCU Run 键;幂等，可安全重复调用。"""
     key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, _RUN_KEY)
     try:
         if enabled:
@@ -67,7 +67,7 @@ def set_autostart(enabled: bool) -> None:
 
 
 class FloatSliderCard(SettingCard):
-    """浮点滑杆卡片:内部按 step 缩放为 int,显示保留小数。"""
+    """浮点滑杆卡片:内部按 step 缩放为 int，显示保留小数。"""
 
     def __init__(self, config_item, icon, title, content, lo, hi, step=0.1, parent=None):
         super().__init__(icon, title, content, parent)
@@ -78,7 +78,7 @@ class FloatSliderCard(SettingCard):
         self._label.setObjectName("valueLabel")
         self._slider = Slider(Qt.Orientation.Horizontal, self)
         self._slider.setMinimumWidth(268)
-        # round 而非 int:1.0/0.1=9.999…,int() 截断会把范围缩成 9–79
+        # round 而非 int:1.0/0.1=9.999…，int() 截断会把范围缩成 9–79
         self._slider.setRange(int(round(lo / step)), int(round(hi / step)))
 
         self.hBoxLayout.addStretch(1)
@@ -103,7 +103,7 @@ class FloatSliderCard(SettingCard):
 
 
 class SettingsWindow(FluentWindow):
-    """单页设置窗口,导航面板隐藏。"""
+    """单页设置窗口，导航面板隐藏。"""
 
     def __init__(self, config):
         super().__init__()
@@ -140,7 +140,7 @@ class SettingsWindow(FluentWindow):
         interact_group.addSettingCard(
             SwitchSettingCard(
                 configItem=self.config.ctrl_peek, icon=FluentIcon.SEARCH,
-                title="Ctrl 触发", content="按住 Ctrl 临时放大,松开收回",
+                title="Ctrl 触发", content="按住 Ctrl 临时放大，松开收回",
             )
         )
         self.hotkey_card = PushSettingCard("点击修改", FluentIcon.PLAY, "常驻热键", self._hotkey_text())
@@ -175,7 +175,7 @@ class SettingsWindow(FluentWindow):
         layout.addStretch(1)
         scroll.setWidget(page)
         self.addSubInterface(scroll, FluentIcon.SETTING, "设置")
-        self.navigationInterface.hide()  # 单页,隐藏导航面板
+        self.navigationInterface.hide()  # 单页，隐藏导航面板
 
     def _hotkey_text(self) -> str:
         return f"当前: {self.config.hotkey.value}"
@@ -205,7 +205,7 @@ class SettingsWindow(FluentWindow):
             editor.keySequence().toString(QKeySequence.SequenceFormat.PortableText)
         )
         if not hotkey:
-            MessageBox("无效热键", "需包含 Ctrl/Alt 修饰键,且不含 Win 键", self).exec()
+            MessageBox("无效热键", "需包含 Ctrl/Alt 修饰键，且不含 Win 键", self).exec()
             return
         self.config.set(self.config.hotkey, hotkey)
 
@@ -217,7 +217,7 @@ class SettingsWindow(FluentWindow):
             reset_all(self.config)
 
     def closeEvent(self, event) -> None:
-        self.hide()  # 关窗隐藏,不退出
+        self.hide()  # 关窗隐藏，不退出
         event.ignore()
 
 
@@ -230,7 +230,7 @@ def _hotkey_to_qseq_text(hotkey: str) -> str:
 def _qseq_to_hotkey(text: str) -> str | None:
     """PortableText('Ctrl+Alt+M') → 'ctrl+alt+m'。
 
-    拒绝:Win 键(Meta,与系统冲突)、无 Ctrl/Alt 的组合(Shift 裸组合会干扰打字)。
+    拒绝:Win 键(Meta，与系统冲突)、无 Ctrl/Alt 的组合(Shift 裸组合会干扰打字)。
     """
     names = {"Ctrl": "ctrl", "Alt": "alt", "Shift": "shift"}
     parts = [p.strip() for p in text.split("+")]

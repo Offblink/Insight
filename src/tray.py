@@ -1,8 +1,8 @@
 """系统托盘:图标(运行时绘制)与菜单。
 
 菜单结构:
-- 倍率预设(1.5x / 2x / 2.5x / 3x / 5x,当前倍率勾选)
-- 跟随模式(勾选,切换常驻跟随)
+- 倍率预设(1.5x / 2x / 2.5x / 3x / 5x，当前倍率勾选)
+- 跟随模式(勾选，切换常驻跟随)
 - 设置…
 - 退出
 双击托盘 = 切换常驻跟随。
@@ -17,7 +17,7 @@ _ZOOM_PRESETS = (1.5, 2.0, 2.5, 3.0, 5.0)
 
 
 def make_icon(size: int = 64) -> QIcon:
-    """运行时绘制放大镜图标(圆环 + 手柄),避免二进制资源文件。"""
+    """运行时绘制放大镜图标(圆环 + 手柄)，避免二进制资源文件。"""
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(pixmap)
@@ -38,7 +38,7 @@ def make_icon(size: int = 64) -> QIcon:
 
 
 class TrayController(QSystemTrayIcon):
-    """托盘控制器:持有图标与菜单,动作直接驱动 config / magnifier。"""
+    """托盘控制器:持有图标与菜单，动作直接驱动 config / magnifier。"""
 
     def __init__(self, config, magnifier, on_open_settings=None):
         super().__init__(make_icon())
