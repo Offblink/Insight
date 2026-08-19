@@ -1,7 +1,7 @@
-"""设置窗口:FluentWindow(隐藏导航) + SettingCardGroup，Windows 11 设置质感。
+"""设置窗口：FluentWindow（隐藏导航） + SettingCardGroup，Windows 11 设置质感。
 
 滑杆卡片直接绑定 ConfigItem;zoom 为浮点，QSlider 只有 int，
-故 zoom 用自建 FloatSliderCard(内部按 0.1 步进缩放)。
+故 zoom 用自建 FloatSliderCard（内部按 0.1 步进缩放）。
 """
 
 import sys
@@ -41,7 +41,7 @@ _APP_NAME = "洞见"
 
 
 def _autostart_command() -> str:
-    """开机自启命令行:pythonw + main.pyw(静默无控制台)。"""
+    """开机自启命令行：pythonw + main.pyw（静默无控制台）。"""
     exe = Path(sys.executable)
     if exe.name.lower() != "pythonw.exe":
         pw = exe.with_name("pythonw.exe")
@@ -52,7 +52,7 @@ def _autostart_command() -> str:
 
 
 def set_autostart(enabled: bool) -> None:
-    """写/删 HKCU Run 键;幂等，可安全重复调用。"""
+    """写/删 HKCU Run 键；幂等，可安全重复调用。"""
     key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, _RUN_KEY)
     try:
         if enabled:
@@ -67,7 +67,7 @@ def set_autostart(enabled: bool) -> None:
 
 
 class FloatSliderCard(SettingCard):
-    """浮点滑杆卡片:内部按 step 缩放为 int，显示保留小数。"""
+    """浮点滑杆卡片：内部按 step 缩放为 int，显示保留小数。"""
 
     def __init__(self, config_item, icon, title, content, lo, hi, step=0.1, parent=None):
         super().__init__(icon, title, content, parent)
@@ -178,7 +178,7 @@ class SettingsWindow(FluentWindow):
         self.navigationInterface.hide()  # 单页，隐藏导航面板
 
     def _hotkey_text(self) -> str:
-        return f"当前: {self.config.hotkey.value}"
+        return f"当前：{self.config.hotkey.value}"
 
     def _edit_hotkey(self) -> None:
         """QKeySequenceEdit 直接感应用户键入的快捷键组合。"""
@@ -186,7 +186,7 @@ class SettingsWindow(FluentWindow):
         dlg.setWindowTitle("设置常驻热键")
         dlg.setModal(True)
         layout = QVBoxLayout(dlg)
-        layout.addWidget(QLabel("按下新的快捷键组合(须包含 Ctrl/Alt 之一)", dlg))
+        layout.addWidget(QLabel("按下新的快捷键组合（须包含 Ctrl/Alt 之一）", dlg))
         editor = QKeySequenceEdit(dlg)
         editor.setMaximumSequenceLength(1)
         editor.setKeySequence(QKeySequence(_hotkey_to_qseq_text(self.config.hotkey.value)))
@@ -210,7 +210,7 @@ class SettingsWindow(FluentWindow):
         self.config.set(self.config.hotkey, hotkey)
 
     def _reset_all(self) -> None:
-        box = MessageBox("恢复默认设置", "确定将所有设置恢复为默认值?", self)
+        box = MessageBox("恢复默认设置", "确定将所有设置恢复为默认值？", self)
         box.yesButton.setText("恢复")
         box.cancelButton.setText("取消")
         if box.exec():
@@ -230,7 +230,7 @@ def _hotkey_to_qseq_text(hotkey: str) -> str:
 def _qseq_to_hotkey(text: str) -> str | None:
     """PortableText('Ctrl+Alt+M') → 'ctrl+alt+m'。
 
-    拒绝:Win 键(Meta，与系统冲突)、无 Ctrl/Alt 的组合(Shift 裸组合会干扰打字)。
+    拒绝：Win 键（Meta，与系统冲突）、无 Ctrl/Alt 的组合（Shift 裸组合会干扰打字）。
     """
     names = {"Ctrl": "ctrl", "Alt": "alt", "Shift": "shift"}
     parts = [p.strip() for p in text.split("+")]

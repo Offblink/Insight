@@ -1,4 +1,4 @@
-"""屏幕捕获:多屏 clamp + HiDPI 校正。
+"""屏幕捕获：多屏 clamp + HiDPI 校正。
 
 使用虚拟桌面坐标定位光标所在屏，再以屏幕本地坐标抓取，
 修复 v1 只抓主屏的问题。grabWindow 返回带 DPR 的 pixmap，绘制时按逻辑尺寸缩放。
@@ -9,7 +9,7 @@ from PyQt6.QtGui import QGuiApplication, QPixmap
 
 
 class Capturer:
-    """从屏幕抓取以 (cx, cy) 为中心的 grab_size 见方区域(逻辑坐标)。"""
+    """从屏幕抓取以 (cx, cy) 为中心的 grab_size 见方区域（逻辑坐标）。"""
 
     def grab(self, cx: int, cy: int, grab_size: int) -> QPixmap:
         screen = QGuiApplication.screenAt(QPoint(cx, cy)) or QGuiApplication.primaryScreen()

@@ -1,7 +1,7 @@
-"""配置:qfluentwidgets QConfig，JSON 持久化于应用目录。
+"""配置：qfluentwidgets QConfig，JSON 持久化于应用目录。
 
 设置卡片经全局 `qconfig.set(item, value)` 回写，因此必须用 `load_config()`
-把 Config 实例注册到 qconfig(否则会存到 cwd 下的默认路径)。
+把 Config 实例注册到 qconfig（否则会存到 cwd 下的默认路径）。
 """
 
 from pathlib import Path
@@ -20,7 +20,7 @@ DEFAULT_FILE = Path(__file__).resolve().parent.parent / "config.json"
 
 
 class Config(QConfig):
-    """应用配置项(类属性共享，JSON 持久化)。"""
+    """应用配置项（类属性共享，JSON 持久化）。"""
 
     # 放大
     zoom = RangeConfigItem("放大", "zoom", 2.5, RangeValidator(1.0, 8.0))

@@ -1,7 +1,7 @@
-"""全局键盘输入:单一监听器，同时处理 Ctrl 按住 peek 与热键组合切换常驻。
+"""全局键盘输入：单一监听器，同时处理 Ctrl 按住 peek 与热键组合切换常驻。
 
-回调运行在 pynput 监听线程;调用方需自行桥接到 Qt 主线程(经信号)。
-边缘触发:Ctrl 从无到有 = peek_start(重复按下不重复触发)，全部释放 = peek_end;
+回调运行在 pynput 监听线程；调用方需自行桥接到 Qt 主线程（经信号）。
+边缘触发：Ctrl 从无到有 = peek_start（重复按下不重复触发），全部释放 = peek_end;
 组合键首次完整按下 = toggle。
 """
 
@@ -41,7 +41,7 @@ def parse_hotkey(hotkey: str) -> set[str]:
 
 
 def _key_token(key) -> str:
-    """pynput key 事件 → 归一化 token;不支持/忽略的键返回 ''。"""
+    """pynput key 事件 → 归一化 token；不支持/忽略的键返回 ''。"""
     if isinstance(key, keyboard.KeyCode):
         ch = key.char
         return ch.lower() if ch and ch.isprintable() else ""
@@ -60,13 +60,13 @@ def _key_token(key) -> str:
 
 
 class InputController:
-    """统一键盘监听:Ctrl 按住 = peek，热键组合 = 常驻跟随。"""
+    """统一键盘监听：Ctrl 按住 = peek，热键组合 = 常驻跟随。"""
 
     def __init__(self, hotkey: str, on_peek_start, on_peek_end, on_toggle):
         self._required = parse_hotkey(hotkey)
         self._pressed: set[str] = set()
         self._combo_done = False
-        self._ctrl_keys: set = set()  # 实际按住的 Ctrl 键对象(去重，防按住重复 press)
+        self._ctrl_keys: set = set()  # 实际按住的 Ctrl 键对象（去重，防按住重复 press）
         self._peek_active = False
         self.on_peek_start = on_peek_start
         self.on_peek_end = on_peek_end
@@ -87,7 +87,7 @@ class InputController:
         self._required = parse_hotkey(hotkey)
         self._combo_done = False
 
-    # ── 事件(可直调用于测试)──
+    # ── 事件（可直调用于测试）──
     def _on_press(self, key) -> None:
         token = _key_token(key)
         if not token:

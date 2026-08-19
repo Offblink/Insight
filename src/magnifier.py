@@ -1,7 +1,7 @@
-"""圆形放大镜窗口:弹性弹出/收回动画、屏幕内容绘制、peek 与常驻跟随。
+"""圆形放大镜窗口：弹性弹出/收回动画、屏幕内容绘制、peek 与常驻跟随。
 
-窗口为无边框置顶透明窗口，鼠标事件穿透;内容每 33ms(约 30fps)重新抓取。
-动画通过 progress 属性驱动:pop = OutBack 弹性放大 + 淡入，retract = InCubic 收回。
+窗口为无边框置顶透明窗口，鼠标事件穿透；内容每 33ms（约 30fps）重新抓取。
+动画通过 progress 属性驱动：pop = OutBack 弹性放大 + 淡入，retract = InCubic 收回。
 """
 
 from PyQt6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRectF, Qt, QTimer, pyqtProperty
@@ -63,7 +63,7 @@ class MagnifierWindow(QWidget):
 
     # ── 显示控制 ──
     def pop(self) -> None:
-        """弹出放大镜并开始跟随(peek 与常驻共用)。"""
+        """弹出放大镜并开始跟随（peek 与常驻共用）。"""
         self._move_to_cursor()
         self._capture()
         self.show()
@@ -100,7 +100,7 @@ class MagnifierWindow(QWidget):
         self._anim.start()
 
     def _on_anim_finished(self) -> None:
-        # 仅收回动画结束时隐藏;弹出动画结束保持显示
+        # 仅收回动画结束时隐藏；弹出动画结束保持显示
         if float(self._anim.endValue()) == 0.0:
             self._timer.stop()
             self.hide()
