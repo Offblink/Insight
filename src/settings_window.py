@@ -41,13 +41,13 @@ _APP_NAME = "洞见"
 
 
 def _autostart_command() -> str:
-    """开机自启命令行:pythonw + main.py(静默无控制台)。"""
+    """开机自启命令行:pythonw + main.pyw(静默无控制台)。"""
     exe = Path(sys.executable)
     if exe.name.lower() != "pythonw.exe":
         pw = exe.with_name("pythonw.exe")
         if pw.exists():
             exe = pw
-    script = Path(__file__).resolve().parents[1] / "main.py"
+    script = Path(__file__).resolve().parents[1] / "main.pyw"
     return f'"{exe}" "{script}"'
 
 

@@ -205,6 +205,35 @@ def test_magnifier_lifecycle() -> None:
     print("  retract 动画 OK")
 
 
+def test_ipc() -> None:
+    from PyQt6.QtNetwork import QLocalServer, QLocalSocket
+    from PyQt6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication(sys.argv)
+    name = f"InsightTestIPC-{os.getpid()}"
+    server = QLocalServer()
+    assert server.listen(name), "QLocalServer 监听失败"
+    got = []
+
+    def _on_connection() -> None:
+        conn = server.nextPendingConnection()
+        conn.readyRead.connect(lambda: got.append(conn.readAll().data().decode()))
+
+    server.newConnection.connect(_on_connection)
+    sock = QLocalSocket()
+    sock.connectToServer(name)
+    assert sock.waitForConnected(500), "QLocalSocket 连接失败"
+    sock.write(b"show")
+    sock.waitForBytesWritten(200)
+    deadline = time.time() + 1.0
+    while time.time() < deadline and not got:
+        app.processEvents()
+        time.sleep(0.01)
+    assert got == ["show"], got
+    server.close()
+    print("  ipc 通知链路 OK")
+
+
 def main() -> None:
     from PyQt6.QtWidgets import QApplication
 
@@ -212,6 +241,7 @@ def main() -> None:
     test_config()
     test_capturer()
     test_hotkey()
+    test_ipc()
     test_tray()
     test_settings()
     test_magnifier_lifecycle()

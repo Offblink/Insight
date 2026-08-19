@@ -11,7 +11,7 @@
 - **托盘常驻**:倍率预设(1.5x–5x)、跟随模式开关、设置、退出;双击托盘切换跟随
 - **多屏 + HiDPI**:虚拟桌面坐标抓取,副屏(含负坐标)与 150%/200% 缩放正确
 - **Fluent 设置窗口**:倍率/大小/偏移实时生效;热键点击后直接按键录入;开机自启;一键恢复默认
-- **细节**:单实例、缺失依赖自动安装、配置 JSON 持久化、启动系统通知
+- **细节**:单实例(重复启动弹系统通知提醒)、缺失依赖自动安装、配置 JSON 持久化、启动系统通知
 
 ## 快速开始
 
@@ -19,7 +19,7 @@
 
 ```bash
 pip install -r requirements.txt
-python main.py          # 或 pythonw main.py(无控制台窗口)
+python main.pyw         # 或 pythonw main.pyw(无控制台窗口)
 ```
 
 ## 使用
@@ -50,13 +50,13 @@ python main.py          # 或 pythonw main.py(无控制台窗口)
 
 ```bash
 python tests/smoke.py             # 冒烟测试(config/捕获/热键/托盘/设置/动画)
-DONGJIAN_SELFTEST=1 python main.py  # 自动化自测:弹出→收回→退出
+DONGJIAN_SELFTEST=1 python main.pyw  # 自动化自测:弹出→收回→退出
 ```
 
 ## 结构
 
 ```
-main.py               入口:单实例、依赖自检、组装
+main.pyw              入口:单实例、依赖自检、组装
 src/config.py         QConfig 配置(JSON 持久化)
 src/capturer.py       多屏 + HiDPI 屏幕捕获
 src/magnifier.py      圆形放大镜窗口(弹性动画、30fps 跟随)

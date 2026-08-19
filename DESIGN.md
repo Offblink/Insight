@@ -107,4 +107,5 @@ PyQt6 + PyQt-Fluent-Widgets 重写,作为"洞见"的 v2 版。
 - 配置持久化:QSettings → **qfluentwidgets QConfig**(JSON,`config.json`),设置卡片原生绑定 ConfigItem,`qconfig.load()` 注册全局目标。
 - 新增:启动系统通知(QSystemTrayIcon.showMessage)、设置窗口"恢复默认"按钮(逐项回 defaultValue)、热键键入感应(QKeySequenceEdit 捕获组合键)。
 - 已知:QCursor.pixmap() 覆盖层在退出时确定性崩溃(exit 9),已移除;放大内容本身含光标(grabWindow 抓桌面 DC)。
+- 单实例:第二实例经 QLocalServer/QLocalSocket IPC("InsightIPC")请求已运行实例弹系统通知(MonaDrive 唤醒模式),不再静默退出。
 

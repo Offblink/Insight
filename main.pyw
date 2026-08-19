@@ -2,6 +2,7 @@
 
 启动即静默驻留托盘并发送系统通知;按住 Ctrl = 临时放大(peek),松开收回;
 全局热键(默认 Ctrl+Alt+M)= 常驻跟随;托盘菜单含倍率预设与设置。
+重复启动:经 IPC 请求已运行实例弹系统通知后退出。
 """
 
 import importlib.util
@@ -42,6 +43,18 @@ def _run_selftest(app, magnifier) -> None:
     QTimer.singleShot(2300, app.quit)
 
 
+def _notify_already_running() -> None:
+    """第二实例:连接 IPC 请求已运行实例弹系统通知,然后退出。"""
+    from PyQt6.QtNetwork import QLocalSocket
+
+    sock = QLocalSocket()
+    sock.connectToServer("InsightIPC")
+    if sock.waitForConnected(500):
+        sock.write(b"show")
+        sock.waitForBytesWritten(200)
+    sock.disconnectFromServer()
+
+
 def main() -> None:
     import os
 
@@ -63,10 +76,10 @@ def main() -> None:
     app.setOrganizationName("洞见")
     app.setQuitOnLastWindowClosed(False)  # 无主窗口,关窗不退出
 
-    # ── 单实例:重复启动直接退出 ──
+    # ── 单实例:重复启动通知用户后退出 ──
     shared = QSharedMemory("洞见V2Singleton")
     if shared.attach() or not shared.create(1):
-        print("洞见已在运行。")
+        _notify_already_running()
         sys.exit(0)
 
     from qfluentwidgets import Theme, qconfig
@@ -96,6 +109,28 @@ def main() -> None:
 
     tray = TrayController(config, magnifier, on_open_settings=_open_settings)
     tray.show()
+
+    # ── 单实例 IPC:第二实例连接时由本实例弹系统通知 ──
+    from PyQt6.QtNetwork import QLocalServer
+
+    ipc_server = QLocalServer(app)
+    if not ipc_server.listen("InsightIPC"):
+        ipc_server.removeServer("InsightIPC")  # 清理残留管道后重试
+        ipc_server.listen("InsightIPC")
+
+    def _on_ipc_connection() -> None:
+        conn = ipc_server.nextPendingConnection()
+        if conn is not None:
+            conn.readAll()
+            conn.disconnectFromServer()
+        tray.showMessage(
+            "Insight 已在运行",
+            "已驻留系统托盘,无需重复启动",
+            QSystemTrayIcon.MessageIcon.Information,
+            3000,
+        )
+
+    ipc_server.newConnection.connect(_on_ipc_connection)
 
     # ── Ctrl peek + 全局热键:统一键盘监听 ──
     bridge = _Bridge()
