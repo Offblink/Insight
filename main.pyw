@@ -70,22 +70,38 @@ def main() -> None:
         sys.exit(0)
 
     from pynput import mouse
+    from qfluentwidgets import Theme, qconfig
 
-    from src.config import Config
+    from src.config import Config, load_config
     from src.hotkey import HotkeyManager
     from src.magnifier import MagnifierWindow
+    from src.settings_window import SettingsWindow, set_autostart
     from src.tray import TrayController
 
-    config = Config()
+    config = load_config()
+    qconfig.set(qconfig.themeMode, Theme.AUTO)  # 跟随系统主题
+
     magnifier = MagnifierWindow(config)
 
-    tray = TrayController(config)
+    # ── 设置窗口:懒创建单实例,关窗隐藏不退出 ──
+    _settings_win = {"win": None}
+
+    def _open_settings() -> None:
+        win = _settings_win["win"]
+        if win is None:
+            win = SettingsWindow(config)
+            _settings_win["win"] = win
+        win.show()
+        win.raise_()
+        win.activateWindow()
+
+    tray = TrayController(config, magnifier, on_open_settings=_open_settings)
     tray.show()
 
     # ── 右键 peek:按下弹出并跟随,松开收回 ──
     bridge = _MouseBridge()
     bridge.right_pressed.connect(
-        lambda: magnifier.pop() if config.get("right_click") and not magnifier.is_persistent else None
+        lambda: magnifier.pop() if config.right_click.value and not magnifier.is_persistent else None
     )
     bridge.right_released.connect(
         lambda: None if magnifier.is_persistent else magnifier.retract()
@@ -104,14 +120,19 @@ def main() -> None:
 
     # ── 全局热键:切换常驻跟随 ──
     hotkey_manager = HotkeyManager(bridge.toggle_persistent.emit)
-    hotkey_manager.set_hotkey(config.get("hotkey"))
+    hotkey_manager.set_hotkey(config.hotkey.value)
 
-    def _on_config_changed(key: str) -> None:
-        magnifier.apply_config()
-        if key == "hotkey":
-            hotkey_manager.set_hotkey(config.get("hotkey"))
+    # ── 配置变更实时生效 ──
+    config.zoom.valueChanged.connect(lambda _v: magnifier.apply_config())
+    config.size.valueChanged.connect(lambda _v: magnifier.apply_config())
+    config.offset.valueChanged.connect(lambda _v: magnifier.apply_config())
+    config.hotkey.valueChanged.connect(lambda _v: hotkey_manager.set_hotkey(config.hotkey.value))
+    config.autostart.valueChanged.connect(lambda _v: set_autostart(bool(config.autostart.value)))
 
-    config.changed.connect(_on_config_changed)
+    # ── 启动项:注册表自启同步 + 启动即跟随 ──
+    set_autostart(bool(config.autostart.value))
+    if config.follow_on_start.value:
+        magnifier.set_persistent(True)
 
     if os.environ.get("DONGJIAN_SELFTEST"):
         _run_selftest(app, magnifier)

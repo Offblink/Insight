@@ -56,9 +56,9 @@ class MagnifierWindow(QWidget):
 
     # ── 配置 ──
     def apply_config(self) -> None:
-        self._zoom = float(self.config.get("zoom"))
-        self._size = int(self.config.get("size"))
-        self._offset = int(self.config.get("offset"))
+        self._zoom = float(self.config.zoom.value)
+        self._size = int(self.config.size.value)
+        self._offset = int(self.config.offset.value)
         self.setFixedSize(self._size, self._size)
 
     # ── 显示控制 ──

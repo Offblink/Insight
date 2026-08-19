@@ -1,0 +1,24 @@
+{
+    "常规": {
+        "autostart": false
+    },
+    "交互": {
+        "follow_on_start": false,
+        "hotkey": "ctrl+alt+m",
+        "right_click": true
+    },
+    "QFluentWidgets": {
+        "FontFamilies": [
+            "Segoe UI",
+            "Microsoft YaHei",
+            "PingFang SC"
+        ],
+        "ThemeColor": "#ff009faa",
+        "ThemeMode": "Auto"
+    },
+    "放大": {
+        "offset": 15,
+        "size": 220,
+        "zoom": 2.5
+    }
+}
