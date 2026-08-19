@@ -130,8 +130,8 @@ def main() -> None:
     # ── 启动通知(自测模式静默)──
     if not os.environ.get("DONGJIAN_SELFTEST"):
         tray.showMessage(
-            "洞见已启动",
-            "按住 Ctrl 临时放大查看,Ctrl+Alt+M 常驻跟随",
+            "Insight 已启动",
+            "Ctrl 放大查看，Ctrl + Alt + M 常驻跟随",
             QSystemTrayIcon.MessageIcon.Information,
             3000,
         )

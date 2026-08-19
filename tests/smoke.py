@@ -144,9 +144,20 @@ def test_settings() -> None:
 
     # FloatSliderCard:滑杆 → config 更新 → 卡片刷新
     card = FloatSliderCard(config.zoom, FluentIcon.ZOOM, "倍率", "1.0-8.0", 1.0, 8.0, 0.1)
+    # 范围:浮点除法的 round 修正,1.0→10、8.0→80(而非截断成 9/79)
+    assert card._slider.minimum() == 10 and card._slider.maximum() == 80
+    # 方向1:拖滑杆 → config 更新
     card._slider.setValue(int(2.0 / 0.1))
     app.processEvents()
     assert abs(config.get(config.zoom) - 2.0) < 1e-6, config.get(config.zoom)
+    # 方向2:外部改值(托盘预设/恢复默认)→ 滑块跟随
+    config.set(config.zoom, 3.0)
+    app.processEvents()
+    assert card._slider.value() == 30, card._slider.value()
+    # 极端值不钳位错位
+    config.set(config.zoom, 8.0)
+    app.processEvents()
+    assert card._slider.value() == 80 and card._label.text() == "8"
 
     # 恢复默认:全部配置项回初始值
     config.set(config.zoom, 6.0)

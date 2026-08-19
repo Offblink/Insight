@@ -78,7 +78,8 @@ class FloatSliderCard(SettingCard):
         self._label.setObjectName("valueLabel")
         self._slider = Slider(Qt.Orientation.Horizontal, self)
         self._slider.setMinimumWidth(268)
-        self._slider.setRange(int(lo / step), int(hi / step))
+        # round 而非 int:1.0/0.1=9.999…,int() 截断会把范围缩成 9–79
+        self._slider.setRange(int(round(lo / step)), int(round(hi / step)))
 
         self.hBoxLayout.addStretch(1)
         self.hBoxLayout.addWidget(self._label, 0, Qt.AlignmentFlag.AlignRight)
