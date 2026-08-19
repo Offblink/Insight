@@ -1,7 +1,9 @@
-"""设置窗口：FluentWindow（隐藏导航） + SettingCardGroup，Windows 11 设置质感。
+"""设置窗口：原生窗框 + Fluent 卡片，Windows 11 设置质感。
 
 滑杆卡片直接绑定 ConfigItem;zoom 为浮点，QSlider 只有 int，
 故 zoom 用自建 FloatSliderCard（内部按 0.1 步进缩放）。
+注：FluentWindow 的无边框机制在部分 Win11 版本上原生崩溃（exit 9），
+故改用 QDialog（原生窗框）+ Fluent 卡片，稳定性优先。
 """
 
 import sys
@@ -22,7 +24,6 @@ from PyQt6.QtWidgets import (
 from qfluentwidgets import (
     ConfigItem,
     FluentIcon,
-    FluentWindow,
     MessageBox,
     PrimaryPushSettingCard,
     PushSettingCard,
@@ -41,13 +42,16 @@ _APP_NAME = "洞见"
 
 
 def _autostart_command() -> str:
-    """开机自启命令行：pythonw + main.pyw（静默无控制台）。"""
+    """开机自启命令行：pythonw + 入口脚本（静默无控制台）。"""
     exe = Path(sys.executable)
     if exe.name.lower() != "pythonw.exe":
         pw = exe.with_name("pythonw.exe")
         if pw.exists():
             exe = pw
-    script = Path(__file__).resolve().parents[1] / "main.pyw"
+    root = Path(__file__).resolve().parents[1]
+    script = root / "main.pyw"
+    if not script.exists():  # 兼容用户将入口改名为 main.py
+        script = root / "main.py"
     return f'"{exe}" "{script}"'
 
 
@@ -102,8 +106,8 @@ class FloatSliderCard(SettingCard):
         self._label.setText(f"{self._item.value:g}")
 
 
-class SettingsWindow(FluentWindow):
-    """单页设置窗口，导航面板隐藏。"""
+class SettingsWindow(QDialog):
+    """设置窗口：原生窗框 + Fluent 卡片（FluentWindow 在部分 Win11 上原生崩溃）。"""
 
     def __init__(self, config):
         super().__init__()
@@ -114,9 +118,10 @@ class SettingsWindow(FluentWindow):
         self._build_ui()
 
     def _build_ui(self) -> None:
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(12, 12, 12, 12)
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
-        scroll.setObjectName("settingsInterface")  # addSubInterface 要求非空 objectName
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(24, 24, 24, 24)
@@ -174,8 +179,7 @@ class SettingsWindow(FluentWindow):
 
         layout.addStretch(1)
         scroll.setWidget(page)
-        self.addSubInterface(scroll, FluentIcon.SETTING, "设置")
-        self.navigationInterface.hide()  # 单页，隐藏导航面板
+        outer.addWidget(scroll)
 
     def _hotkey_text(self) -> str:
         return f"当前：{self.config.hotkey.value}"

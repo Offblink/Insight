@@ -82,7 +82,13 @@ def main() -> None:
         _notify_already_running()
         sys.exit(0)
 
-    from qfluentwidgets import Theme, qconfig
+    from qfluentwidgets import QConfig, Theme, qconfig
+
+    # ── 绑定守卫:qfluentwidgets 必须与应用同为 PyQt6,否则给出明确修复提示 ──
+    if not QConfig.__mro__[1].__module__.startswith("PyQt6"):
+        print("绑定冲突:qfluentwidgets 非 PyQt6 版本,与应用(PyQt6)不兼容。")
+        print("修复:python -m pip install --force-reinstall PyQt6-Fluent-Widgets")
+        sys.exit(1)
 
     from src.config import Config, load_config
     from src.hotkey import InputController

@@ -108,4 +108,5 @@ PyQt6 + PyQt-Fluent-Widgets 重写，作为“洞见“的 v2 版。
 - 新增：启动系统通知（QSystemTrayIcon.showMessage）、设置窗口“恢复默认“按钮（逐项回 defaultValue）、热键键入感应（QKeySequenceEdit 捕获组合键）。
 - 已知：QCursor.pixmap() 覆盖层在退出时确定性崩溃（exit 9），已移除；放大内容本身含光标（grabWindow 抓桌面 DC）。
 - 单实例：第二实例经 QLocalServer/QLocalSocket IPC（"InsightIPC"）请求已运行实例弹系统通知（MonaDrive 唤醒模式），不再静默退出。
+- 绑定修复：环境曾同时存在 PyQt5/PyQt6/PySide6 与两个 qfluentwidgets 发行包，磁盘包被 PyQt5 系覆盖导致 "QWidget: Must construct a QApplication before a QWidget"。已重装 PyQt6-Fluent-Widgets 并在入口加绑定守卫。另发现 PyQt6 系 FluentWindow 在 Win11 26200 上 show 即原生崩溃（exit 9），设置窗口改用 QDialog（原生窗框）+ Fluent 卡片规避。
 
