@@ -53,6 +53,7 @@ def main() -> None:
 
         right_pressed = pyqtSignal()
         right_released = pyqtSignal()
+        toggle_persistent = pyqtSignal()
 
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -71,12 +72,12 @@ def main() -> None:
     from pynput import mouse
 
     from src.config import Config
+    from src.hotkey import HotkeyManager
     from src.magnifier import MagnifierWindow
     from src.tray import TrayController
 
     config = Config()
     magnifier = MagnifierWindow(config)
-    config.changed.connect(magnifier.apply_config)
 
     tray = TrayController(config)
     tray.show()
@@ -89,6 +90,9 @@ def main() -> None:
     bridge.right_released.connect(
         lambda: None if magnifier.is_persistent else magnifier.retract()
     )
+    bridge.toggle_persistent.connect(
+        lambda: magnifier.set_persistent(not magnifier.is_persistent)
+    )
 
     def _on_click(_x, _y, button, pressed):
         if button == mouse.Button.right:
@@ -97,6 +101,17 @@ def main() -> None:
     listener = mouse.Listener(on_click=_on_click)
     listener.daemon = True
     listener.start()
+
+    # ── 全局热键:切换常驻跟随 ──
+    hotkey_manager = HotkeyManager(bridge.toggle_persistent.emit)
+    hotkey_manager.set_hotkey(config.get("hotkey"))
+
+    def _on_config_changed(key: str) -> None:
+        magnifier.apply_config()
+        if key == "hotkey":
+            hotkey_manager.set_hotkey(config.get("hotkey"))
+
+    config.changed.connect(_on_config_changed)
 
     if os.environ.get("DONGJIAN_SELFTEST"):
         _run_selftest(app, magnifier)

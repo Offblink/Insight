@@ -65,12 +65,29 @@ def test_magnifier_lifecycle() -> None:
     print("  retract 动画 OK")
 
 
+def test_hotkey() -> None:
+    from src.hotkey import HotkeyManager, _to_pynput
+
+    assert _to_pynput("ctrl+alt+m") == "<ctrl>+<alt>+m"
+    assert _to_pynput("Ctrl + Shift + Z") == "<ctrl>+<shift>+z"
+    assert _to_pynput("f5") == "<f5>"
+    assert _to_pynput("win+1") == "<cmd>+1"
+    fired = []
+    mgr = HotkeyManager(lambda: fired.append(1))
+    mgr.set_hotkey("ctrl+alt+m")
+    mgr.stop()
+    mgr.set_hotkey("")
+    assert not mgr._listener
+    print("  hotkey 转换与生命周期 OK")
+
+
 def main() -> None:
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
     test_config()
     test_capturer()
+    test_hotkey()
     test_magnifier_lifecycle()
     print("SMOKE OK")
 
