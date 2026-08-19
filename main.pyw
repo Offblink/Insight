@@ -33,9 +33,26 @@ def _ensure_deps() -> None:
     sys.exit(0)
 
 
+def _run_selftest(app, magnifier) -> None:
+    """DONGJIAN_SELFTEST=1:程序化 pop→retract→quit,供自动化验证。"""
+    from PyQt6.QtCore import QTimer
+
+    QTimer.singleShot(800, magnifier.pop)
+    QTimer.singleShot(1600, magnifier.retract)
+    QTimer.singleShot(2300, app.quit)
+
+
 def main() -> None:
-    from PyQt6.QtCore import Qt, QSharedMemory
+    import os
+
+    from PyQt6.QtCore import QObject, Qt, QSharedMemory, pyqtSignal
     from PyQt6.QtWidgets import QApplication
+
+    class _MouseBridge(QObject):
+        """pynput 回调线程 → Qt 主线程的信号桥(queued 连接,线程安全)。"""
+
+        right_pressed = pyqtSignal()
+        right_released = pyqtSignal()
 
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -51,12 +68,38 @@ def main() -> None:
         print("洞见已在运行。")
         sys.exit(0)
 
+    from pynput import mouse
+
     from src.config import Config
+    from src.magnifier import MagnifierWindow
     from src.tray import TrayController
 
     config = Config()
+    magnifier = MagnifierWindow(config)
+    config.changed.connect(magnifier.apply_config)
+
     tray = TrayController(config)
     tray.show()
+
+    # ── 右键 peek:按下弹出并跟随,松开收回 ──
+    bridge = _MouseBridge()
+    bridge.right_pressed.connect(
+        lambda: magnifier.pop() if config.get("right_click") and not magnifier.is_persistent else None
+    )
+    bridge.right_released.connect(
+        lambda: None if magnifier.is_persistent else magnifier.retract()
+    )
+
+    def _on_click(_x, _y, button, pressed):
+        if button == mouse.Button.right:
+            (bridge.right_pressed if pressed else bridge.right_released).emit()
+
+    listener = mouse.Listener(on_click=_on_click)
+    listener.daemon = True
+    listener.start()
+
+    if os.environ.get("DONGJIAN_SELFTEST"):
+        _run_selftest(app, magnifier)
 
     sys.exit(app.exec())
 
