@@ -131,6 +131,9 @@ class SettingsWindow(FluentWindow):
         )
         self.hotkey_card = PushSettingCard("点击修改", FluentIcon.PLAY, "常驻热键", self._hotkey_text())
         self.hotkey_card.clicked.connect(self._edit_hotkey)
+        self.config.hotkey.valueChanged.connect(
+            lambda _v: self.hotkey_card.setContent(self._hotkey_text())
+        )
         interact_group.addSettingCard(self.hotkey_card)
         interact_group.addSettingCard(
             SwitchSettingCard(
