@@ -1,6 +1,6 @@
 """洞见 v2 — 圆形鼠标放大镜(托盘常驻版)。
 
-启动即静默驻留托盘;右键按住 = 临时放大(peek),松开收回;
+启动即静默驻留托盘并发送系统通知;按住 Ctrl = 临时放大(peek),松开收回;
 全局热键(默认 Ctrl+Alt+M)= 常驻跟随;托盘菜单含倍率预设与设置。
 """
 
@@ -46,13 +46,13 @@ def main() -> None:
     import os
 
     from PyQt6.QtCore import QObject, Qt, QSharedMemory, pyqtSignal
-    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
 
-    class _MouseBridge(QObject):
+    class _Bridge(QObject):
         """pynput 回调线程 → Qt 主线程的信号桥(queued 连接,线程安全)。"""
 
-        right_pressed = pyqtSignal()
-        right_released = pyqtSignal()
+        peek_started = pyqtSignal()
+        peek_ended = pyqtSignal()
         toggle_persistent = pyqtSignal()
 
     QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -69,11 +69,10 @@ def main() -> None:
         print("洞见已在运行。")
         sys.exit(0)
 
-    from pynput import mouse
     from qfluentwidgets import Theme, qconfig
 
     from src.config import Config, load_config
-    from src.hotkey import HotkeyManager
+    from src.hotkey import InputController
     from src.magnifier import MagnifierWindow
     from src.settings_window import SettingsWindow, set_autostart
     from src.tray import TrayController
@@ -98,41 +97,44 @@ def main() -> None:
     tray = TrayController(config, magnifier, on_open_settings=_open_settings)
     tray.show()
 
-    # ── 右键 peek:按下弹出并跟随,松开收回 ──
-    bridge = _MouseBridge()
-    bridge.right_pressed.connect(
-        lambda: magnifier.pop() if config.right_click.value and not magnifier.is_persistent else None
+    # ── Ctrl peek + 全局热键:统一键盘监听 ──
+    bridge = _Bridge()
+    bridge.peek_started.connect(
+        lambda: magnifier.pop() if config.ctrl_peek.value and not magnifier.is_persistent else None
     )
-    bridge.right_released.connect(
-        lambda: None if magnifier.is_persistent else magnifier.retract()
-    )
+    bridge.peek_ended.connect(lambda: None if magnifier.is_persistent else magnifier.retract())
     bridge.toggle_persistent.connect(
         lambda: magnifier.set_persistent(not magnifier.is_persistent)
     )
 
-    def _on_click(_x, _y, button, pressed):
-        if button == mouse.Button.right:
-            (bridge.right_pressed if pressed else bridge.right_released).emit()
-
-    listener = mouse.Listener(on_click=_on_click)
-    listener.daemon = True
-    listener.start()
-
-    # ── 全局热键:切换常驻跟随 ──
-    hotkey_manager = HotkeyManager(bridge.toggle_persistent.emit)
-    hotkey_manager.set_hotkey(config.hotkey.value)
+    input_controller = InputController(
+        config.hotkey.value,
+        on_peek_start=bridge.peek_started.emit,
+        on_peek_end=bridge.peek_ended.emit,
+        on_toggle=bridge.toggle_persistent.emit,
+    )
+    input_controller.start()
 
     # ── 配置变更实时生效 ──
     config.zoom.valueChanged.connect(lambda _v: magnifier.apply_config())
     config.size.valueChanged.connect(lambda _v: magnifier.apply_config())
     config.offset.valueChanged.connect(lambda _v: magnifier.apply_config())
-    config.hotkey.valueChanged.connect(lambda _v: hotkey_manager.set_hotkey(config.hotkey.value))
+    config.hotkey.valueChanged.connect(lambda _v: input_controller.set_hotkey(config.hotkey.value))
     config.autostart.valueChanged.connect(lambda _v: set_autostart(bool(config.autostart.value)))
 
     # ── 启动项:注册表自启同步 + 启动即跟随 ──
     set_autostart(bool(config.autostart.value))
     if config.follow_on_start.value:
         magnifier.set_persistent(True)
+
+    # ── 启动通知(自测模式静默)──
+    if not os.environ.get("DONGJIAN_SELFTEST"):
+        tray.showMessage(
+            "洞见已启动",
+            "按住 Ctrl 临时放大查看,Ctrl+Alt+M 常驻跟随",
+            QSystemTrayIcon.MessageIcon.Information,
+            3000,
+        )
 
     if os.environ.get("DONGJIAN_SELFTEST"):
         _run_selftest(app, magnifier)

@@ -27,7 +27,7 @@ class Config(QConfig):
     size = RangeConfigItem("放大", "size", 220, RangeValidator(120, 400))
     offset = RangeConfigItem("放大", "offset", 15, RangeValidator(0, 60))
     # 交互
-    right_click = OptionsConfigItem("交互", "right_click", True, BoolValidator())
+    ctrl_peek = OptionsConfigItem("交互", "ctrl_peek", True, BoolValidator())
     hotkey = ConfigItem("交互", "hotkey", "ctrl+alt+m")
     follow_on_start = OptionsConfigItem("交互", "follow_on_start", False, BoolValidator())
     # 常规

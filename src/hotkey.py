@@ -1,6 +1,8 @@
-"""全局热键:pynput GlobalHotKeys,切换常驻跟随模式。
+"""全局键盘输入:单一监听器,同时处理 Ctrl 按住 peek 与热键组合切换常驻。
 
 回调运行在 pynput 监听线程;调用方需自行桥接到 Qt 主线程(经信号)。
+边缘触发:Ctrl 从无到有 = peek_start(重复按下不重复触发),全部释放 = peek_end;
+组合键首次完整按下 = toggle。
 """
 
 import re
@@ -23,33 +25,56 @@ _SPECIAL = {
 _FKEY = re.compile(r"^f([1-9]|1[0-9]|2[0-4])$")
 
 
-def _to_pynput(hotkey: str) -> str:
-    """'ctrl+alt+m' → '<ctrl>+<alt>+m'(pynput 语法)。"""
-    parts = []
-    for token in hotkey.lower().split("+"):
-        token = token.strip()
-        if token in _SPECIAL:
-            parts.append(_SPECIAL[token])
-        elif _FKEY.match(token):
-            parts.append(f"<{token}>")
-        else:
-            parts.append(token)
-    return "+".join(parts)
+def _normalize_token(token: str) -> str:
+    """'ctrl' → '<ctrl>','m' → 'm','f5' → '<f5>'。"""
+    token = token.strip().lower()
+    if token in _SPECIAL:
+        return _SPECIAL[token]
+    if _FKEY.match(token):
+        return f"<{token}>"
+    return token
 
 
-class HotkeyManager:
-    """管理单个全局热键;set_hotkey 会重启监听器。"""
+def parse_hotkey(hotkey: str) -> set[str]:
+    """'ctrl+alt+m' → {'<ctrl>', '<alt>', 'm'}。"""
+    return {_normalize_token(t) for t in (hotkey or "").split("+") if t.strip()}
 
-    def __init__(self, callback):
-        self._callback = callback
-        self._listener: keyboard.GlobalHotKeys | None = None
 
-    def set_hotkey(self, hotkey: str) -> None:
-        self.stop()
-        hotkey = (hotkey or "").strip()
-        if not hotkey:
-            return
-        self._listener = keyboard.GlobalHotKeys({_to_pynput(hotkey): self._callback})
+def _key_token(key) -> str:
+    """pynput key 事件 → 归一化 token;不支持/忽略的键返回 ''。"""
+    if isinstance(key, keyboard.KeyCode):
+        ch = key.char
+        return ch.lower() if ch and ch.isprintable() else ""
+    name = key.name
+    if name in ("ctrl_l", "ctrl_r"):
+        return "<ctrl>"
+    if name in ("alt_l", "alt_r", "alt_gr"):
+        return "<alt>"
+    if name in ("shift", "shift_l", "shift_r"):
+        return "<shift>"
+    if name in ("cmd", "cmd_l", "cmd_r"):
+        return "<cmd>"
+    if name.startswith("f") and name[1:].isdigit():
+        return f"<{name}>"
+    return ""
+
+
+class InputController:
+    """统一键盘监听:Ctrl 按住 = peek,热键组合 = 常驻跟随。"""
+
+    def __init__(self, hotkey: str, on_peek_start, on_peek_end, on_toggle):
+        self._required = parse_hotkey(hotkey)
+        self._pressed: set[str] = set()
+        self._combo_done = False
+        self._ctrl_count = 0
+        self._peek_active = False
+        self.on_peek_start = on_peek_start
+        self.on_peek_end = on_peek_end
+        self.on_toggle = on_toggle
+        self._listener = None
+
+    def start(self) -> None:
+        self._listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
         self._listener.daemon = True
         self._listener.start()
 
@@ -57,3 +82,35 @@ class HotkeyManager:
         if self._listener is not None:
             self._listener.stop()
             self._listener = None
+
+    def set_hotkey(self, hotkey: str) -> None:
+        self._required = parse_hotkey(hotkey)
+        self._combo_done = False
+
+    # ── 事件(可直调用于测试)──
+    def _on_press(self, key) -> None:
+        token = _key_token(key)
+        if not token:
+            return
+        if token == "<ctrl>":
+            if self._ctrl_count == 0:
+                self._peek_active = True
+                self.on_peek_start()
+            self._ctrl_count += 1
+        self._pressed.add(token)
+        if self._required and self._required <= self._pressed and not self._combo_done:
+            self._combo_done = True
+            self.on_toggle()
+
+    def _on_release(self, key) -> None:
+        token = _key_token(key)
+        if not token:
+            return
+        if token == "<ctrl>":
+            self._ctrl_count = max(0, self._ctrl_count - 1)
+            if self._ctrl_count == 0 and self._peek_active:
+                self._peek_active = False
+                self.on_peek_end()
+        self._pressed.discard(token)
+        if not (self._required <= self._pressed):
+            self._combo_done = False

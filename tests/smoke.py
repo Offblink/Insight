@@ -23,14 +23,14 @@ def test_config() -> None:
     cfg = load_config(file)
     cfg.set(cfg.zoom, 3.0)
     assert cfg.get(cfg.zoom) == 3.0
-    cfg.set(cfg.right_click, False)
-    assert cfg.get(cfg.right_click) is False
+    cfg.set(cfg.ctrl_peek, False)
+    assert cfg.get(cfg.ctrl_peek) is False
     cfg.set(cfg.hotkey, "ctrl+shift+z")
     assert cfg.get(cfg.hotkey) == "ctrl+shift+z"
     # 重新加载,验证 JSON 落盘
     cfg2 = load_config(file)
     assert cfg2.get(cfg2.zoom) == 3.0
-    assert cfg2.get(cfg2.right_click) is False
+    assert cfg2.get(cfg2.ctrl_peek) is False
     assert cfg2.get(cfg2.hotkey) == "ctrl+shift+z"
     print("  config 持久化 OK")
 
@@ -46,19 +46,44 @@ def test_capturer() -> None:
 
 
 def test_hotkey() -> None:
-    from src.hotkey import HotkeyManager, _to_pynput
+    from pynput import keyboard
 
-    assert _to_pynput("ctrl+alt+m") == "<ctrl>+<alt>+m"
-    assert _to_pynput("Ctrl + Shift + Z") == "<ctrl>+<shift>+z"
-    assert _to_pynput("f5") == "<f5>"
-    assert _to_pynput("win+1") == "<cmd>+1"
-    fired = []
-    mgr = HotkeyManager(lambda: fired.append(1))
-    mgr.set_hotkey("ctrl+alt+m")
-    mgr.stop()
-    mgr.set_hotkey("")
-    assert not mgr._listener
-    print("  hotkey 转换与生命周期 OK")
+    from src.hotkey import InputController, _key_token, parse_hotkey
+
+    assert parse_hotkey("ctrl+alt+m") == {"<ctrl>", "<alt>", "m"}
+    assert parse_hotkey("win+1") == {"<cmd>", "1"}
+    assert _key_token(keyboard.Key.ctrl_l) == "<ctrl>"
+    assert _key_token(keyboard.Key.alt_r) == "<alt>"
+    assert _key_token(keyboard.Key.f5) == "<f5>"
+    assert _key_token(keyboard.KeyCode.from_char("M")) == "m"
+
+    events = []
+    ic = InputController(
+        "ctrl+alt+m",
+        lambda: events.append("peek_start"),
+        lambda: events.append("peek_end"),
+        lambda: events.append("toggle"),
+    )
+    # Ctrl 按住:边缘触发一次;双 Ctrl 键重复按下不重复触发
+    ic._on_press(keyboard.Key.ctrl_l)
+    ic._on_press(keyboard.Key.ctrl_r)
+    assert events == ["peek_start"]
+    ic._on_release(keyboard.Key.ctrl_r)
+    assert events == ["peek_start"]
+    ic._on_release(keyboard.Key.ctrl_l)
+    assert events == ["peek_start", "peek_end"]
+    # 组合:ctrl+alt+m 完整按下 → toggle 一次;松开 m 再按 → 再触发
+    ic._on_press(keyboard.Key.ctrl_l)
+    ic._on_press(keyboard.Key.alt_l)
+    ic._on_press(keyboard.KeyCode.from_char("m"))
+    assert events == ["peek_start", "peek_end", "peek_start", "toggle"]
+    ic._on_release(keyboard.KeyCode.from_char("m"))
+    ic._on_press(keyboard.KeyCode.from_char("m"))
+    assert events.count("toggle") == 2
+    # 热键热替换
+    ic.set_hotkey("ctrl+shift+z")
+    assert ic._required == {"<ctrl>", "<shift>", "z"}
+    print("  hotkey 边缘触发 OK")
 
 
 def test_tray() -> None:
@@ -91,16 +116,35 @@ def test_settings() -> None:
     from qfluentwidgets import FluentIcon
 
     from src.config import load_config
-    from src.settings_window import FloatSliderCard, SettingsWindow, set_autostart
+    from src.settings_window import (
+        FloatSliderCard,
+        SettingsWindow,
+        _hotkey_to_qseq_text,
+        _qseq_to_hotkey,
+        reset_all,
+    )
 
     app = QApplication.instance() or QApplication(sys.argv)
     config = load_config(_tmp_config())
+
+    # 热键格式互转
+    assert _hotkey_to_qseq_text("ctrl+alt+m") == "Ctrl+Alt+M"
+    assert _qseq_to_hotkey("Ctrl+Alt+M") == "ctrl+alt+m"
+    assert _qseq_to_hotkey("M") is None  # 无修饰键拒绝
 
     # FloatSliderCard:滑杆 → config 更新 → 卡片刷新
     card = FloatSliderCard(config.zoom, FluentIcon.ZOOM, "倍率", "1.0-8.0", 1.0, 8.0, 0.1)
     card._slider.setValue(int(2.0 / 0.1))
     app.processEvents()
     assert abs(config.get(config.zoom) - 2.0) < 1e-6, config.get(config.zoom)
+
+    # 恢复默认:全部配置项回初始值
+    config.set(config.zoom, 6.0)
+    config.set(config.hotkey, "ctrl+shift+z")
+    reset_all(config)
+    assert abs(config.get(config.zoom) - 2.5) < 1e-6
+    assert config.get(config.hotkey) == "ctrl+alt+m"
+    assert config.get(config.ctrl_peek) is True
 
     win = SettingsWindow(config)
     win.show()

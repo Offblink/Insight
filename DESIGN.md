@@ -100,3 +100,11 @@ PyQt6 + PyQt-Fluent-Widgets 重写,作为"洞见"的 v2 版。
 1. 触发方式:C 组合(右键 peek + 热键常驻)是否 OK?热键默认值?
 2. 项目位置:`洞见/v2/` 子目录(保留 v1)还是覆盖 v1?
 3. 默认倍率/大小(建议 2.5x / 220px,范围 1–8x / 120–400px)?
+
+## 变更记录(实测后调整)
+
+- 触发方式:右键 → **Ctrl 按住**。右键与系统上下文菜单冲突(松键弹菜单),Ctrl 按住无冲突且更顺手;设置项 `right_click` → `ctrl_peek`。
+- 配置持久化:QSettings → **qfluentwidgets QConfig**(JSON,`config.json`),设置卡片原生绑定 ConfigItem,`qconfig.load()` 注册全局目标。
+- 新增:启动系统通知(QSystemTrayIcon.showMessage)、设置窗口"恢复默认"按钮(逐项回 defaultValue)、热键键入感应(QKeySequenceEdit 捕获组合键)。
+- 已知:QCursor.pixmap() 覆盖层在退出时确定性崩溃(exit 9),已移除;放大内容本身含光标(grabWindow 抓桌面 DC)。
+
