@@ -66,7 +66,7 @@ class InputController:
         self._required = parse_hotkey(hotkey)
         self._pressed: set[str] = set()
         self._combo_done = False
-        self._ctrl_count = 0
+        self._ctrl_keys: set = set()  # 实际按住的 Ctrl 键对象(去重,防按住重复 press)
         self._peek_active = False
         self.on_peek_start = on_peek_start
         self.on_peek_end = on_peek_end
@@ -93,10 +93,10 @@ class InputController:
         if not token:
             return
         if token == "<ctrl>":
-            if self._ctrl_count == 0:
+            if not self._ctrl_keys:  # 首次按下才触发,重复 press 不重复弹
                 self._peek_active = True
                 self.on_peek_start()
-            self._ctrl_count += 1
+            self._ctrl_keys.add(key)
         self._pressed.add(token)
         if self._required and self._required <= self._pressed and not self._combo_done:
             self._combo_done = True
@@ -107,8 +107,8 @@ class InputController:
         if not token:
             return
         if token == "<ctrl>":
-            self._ctrl_count = max(0, self._ctrl_count - 1)
-            if self._ctrl_count == 0 and self._peek_active:
+            self._ctrl_keys.discard(key)
+            if not self._ctrl_keys and self._peek_active:  # 全部 Ctrl 松开才收回
                 self._peek_active = False
                 self.on_peek_end()
         self._pressed.discard(token)

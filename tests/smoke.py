@@ -64,19 +64,26 @@ def test_hotkey() -> None:
         lambda: events.append("peek_end"),
         lambda: events.append("toggle"),
     )
-    # Ctrl 按住:边缘触发一次;双 Ctrl 键重复按下不重复触发
+    # Ctrl 按住:边缘触发一次;pynput 重复 press 不重复触发;松开一次即收回
     ic._on_press(keyboard.Key.ctrl_l)
-    ic._on_press(keyboard.Key.ctrl_r)
-    assert events == ["peek_start"]
-    ic._on_release(keyboard.Key.ctrl_r)
+    ic._on_press(keyboard.Key.ctrl_l)  # 按住期间的重复 press
+    ic._on_press(keyboard.Key.ctrl_l)
     assert events == ["peek_start"]
     ic._on_release(keyboard.Key.ctrl_l)
     assert events == ["peek_start", "peek_end"]
+    # 双 Ctrl 键:松开一个不收回,全部松开才收回
+    ic._on_press(keyboard.Key.ctrl_l)
+    ic._on_press(keyboard.Key.ctrl_r)
+    assert events == ["peek_start", "peek_end", "peek_start"]
+    ic._on_release(keyboard.Key.ctrl_r)
+    assert events == ["peek_start", "peek_end", "peek_start"]
+    ic._on_release(keyboard.Key.ctrl_l)
+    assert events == ["peek_start", "peek_end", "peek_start", "peek_end"]
     # 组合:ctrl+alt+m 完整按下 → toggle 一次;松开 m 再按 → 再触发
     ic._on_press(keyboard.Key.ctrl_l)
     ic._on_press(keyboard.Key.alt_l)
     ic._on_press(keyboard.KeyCode.from_char("m"))
-    assert events == ["peek_start", "peek_end", "peek_start", "toggle"]
+    assert events == ["peek_start", "peek_end", "peek_start", "peek_end", "peek_start", "toggle"]
     ic._on_release(keyboard.KeyCode.from_char("m"))
     ic._on_press(keyboard.KeyCode.from_char("m"))
     assert events.count("toggle") == 2
@@ -130,7 +137,10 @@ def test_settings() -> None:
     # 热键格式互转
     assert _hotkey_to_qseq_text("ctrl+alt+m") == "Ctrl+Alt+M"
     assert _qseq_to_hotkey("Ctrl+Alt+M") == "ctrl+alt+m"
-    assert _qseq_to_hotkey("M") is None  # 无修饰键拒绝
+    assert _qseq_to_hotkey("Ctrl+Shift+Z") == "ctrl+shift+z"
+    assert _qseq_to_hotkey("M") is None        # 无修饰键拒绝
+    assert _qseq_to_hotkey("Meta+M") is None   # Win 键拒绝(系统冲突)
+    assert _qseq_to_hotkey("Shift+M") is None  # Shift 裸组合拒绝(干扰打字)
 
     # FloatSliderCard:滑杆 → config 更新 → 卡片刷新
     card = FloatSliderCard(config.zoom, FluentIcon.ZOOM, "倍率", "1.0-8.0", 1.0, 8.0, 0.1)

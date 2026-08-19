@@ -41,13 +41,13 @@ _APP_NAME = "洞见"
 
 
 def _autostart_command() -> str:
-    """开机自启命令行:pythonw + main.pyw(静默无控制台)。"""
+    """开机自启命令行:pythonw + main.py(静默无控制台)。"""
     exe = Path(sys.executable)
     if exe.name.lower() != "pythonw.exe":
         pw = exe.with_name("pythonw.exe")
         if pw.exists():
             exe = pw
-    script = Path(__file__).resolve().parents[1] / "main.pyw"
+    script = Path(__file__).resolve().parents[1] / "main.py"
     return f'"{exe}" "{script}"'
 
 
@@ -185,7 +185,7 @@ class SettingsWindow(FluentWindow):
         dlg.setWindowTitle("设置常驻热键")
         dlg.setModal(True)
         layout = QVBoxLayout(dlg)
-        layout.addWidget(QLabel("按下新的快捷键组合(须包含 Ctrl/Alt/Win 之一)", dlg))
+        layout.addWidget(QLabel("按下新的快捷键组合(须包含 Ctrl/Alt 之一)", dlg))
         editor = QKeySequenceEdit(dlg)
         editor.setMaximumSequenceLength(1)
         editor.setKeySequence(QKeySequence(_hotkey_to_qseq_text(self.config.hotkey.value)))
@@ -204,12 +204,12 @@ class SettingsWindow(FluentWindow):
             editor.keySequence().toString(QKeySequence.SequenceFormat.PortableText)
         )
         if not hotkey:
-            MessageBox(self, "无效热键", "热键需包含 Ctrl/Alt/Win 修饰键").exec()
+            MessageBox("无效热键", "需包含 Ctrl/Alt 修饰键,且不含 Win 键", self).exec()
             return
         self.config.set(self.config.hotkey, hotkey)
 
     def _reset_all(self) -> None:
-        box = MessageBox(self, "恢复默认设置", "确定将所有设置恢复为默认值?")
+        box = MessageBox("恢复默认设置", "确定将所有设置恢复为默认值?", self)
         box.yesButton.setText("恢复")
         box.cancelButton.setText("取消")
         if box.exec():
@@ -227,14 +227,20 @@ def _hotkey_to_qseq_text(hotkey: str) -> str:
 
 
 def _qseq_to_hotkey(text: str) -> str | None:
-    """PortableText('Ctrl+Alt+M') → 'ctrl+alt+m';无修饰键或空键返回 None。"""
-    mods = {"Ctrl": "ctrl", "Alt": "alt", "Shift": "shift", "Meta": "win"}
+    """PortableText('Ctrl+Alt+M') → 'ctrl+alt+m'。
+
+    拒绝:Win 键(Meta,与系统冲突)、无 Ctrl/Alt 的组合(Shift 裸组合会干扰打字)。
+    """
+    names = {"Ctrl": "ctrl", "Alt": "alt", "Shift": "shift"}
     parts = [p.strip() for p in text.split("+")]
     if len(parts) < 2:
         return None
     key = parts[-1].lower()
-    result = [mods[p] for p in parts[:-1] if p in mods]
-    if not result or not key:
+    mods = parts[:-1]
+    if "Meta" in mods:  # Win 键会触发系统快捷键
+        return None
+    result = [names[p] for p in mods if p in names]
+    if not any(m in ("ctrl", "alt") for m in result) or not key:
         return None
     return "+".join(result + [key])
 
